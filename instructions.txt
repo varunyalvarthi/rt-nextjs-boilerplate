@@ -1,0 +1,3 @@
+This is a NextJS project using the app router. The project structure is documented at @https://nextjs.org/docs/app/getting-started/project-structure
+We use Shadcn/UI for the frontend components. For NextJS 15, the documentation is at @https://ui.shadcn.com/docs/react-19
+We also use MagicUI that works with Shadcn/UI as an additional set of frontend components. The documentation is at @https://magicui.design/docs
