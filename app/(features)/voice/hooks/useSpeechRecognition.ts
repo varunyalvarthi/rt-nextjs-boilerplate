@@ -11,6 +11,7 @@ export const useSpeechRecognition = ({ onTranscript }: UseSpeechRecognitionProps
   const [transcript, setTranscript] = useState('');
 
   useEffect(() => {
+    // Set up speech recognition handlers
     speechRecognitionService.onTranscript((text) => {
       setTranscript(text);
       if (onTranscript) {
@@ -19,30 +20,34 @@ export const useSpeechRecognition = ({ onTranscript }: UseSpeechRecognitionProps
     });
 
     speechRecognitionService.onError((err) => {
+      console.error('Speech recognition error:', err);
       setError(err);
       setIsListening(false);
+      setTranscript('');
     });
 
     speechRecognitionService.onEnd(() => {
       setIsListening(false);
+      setTranscript('');
     });
+
+    // Cleanup when component unmounts
+    return () => {
+      speechRecognitionService.cleanup();
+    };
   }, [onTranscript]);
 
   const startListening = useCallback(async () => {
     try {
-      const hasPermission = await speechRecognitionService.checkPermission();
-      if (!hasPermission) {
-        setError('Microphone permission denied');
-        return;
-      }
-
       setError(null);
-      setIsListening(true);
       setTranscript('');
-      speechRecognitionService.start();
+      setIsListening(true);
+      await speechRecognitionService.start();
     } catch (err) {
-      setError('Error starting speech recognition');
+      console.error('Failed to start listening:', err);
+      setError('Failed to start speech recognition');
       setIsListening(false);
+      setTranscript('');
     }
   }, []);
 

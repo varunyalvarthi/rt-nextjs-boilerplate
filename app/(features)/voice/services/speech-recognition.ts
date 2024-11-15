@@ -5,14 +5,27 @@ class SpeechRecognitionService {
   private onTranscriptCallback: SpeechRecognitionCallback | null = null;
   private onErrorCallback: ((error: string) => void) | null = null;
   private onEndCallback: (() => void) | null = null;
+  private isInitialized: boolean = false;
+  private isListening: boolean = false;
 
   constructor() {
-    if (typeof window !== 'undefined') {
+    this.initializeRecognition();
+  }
+
+  private initializeRecognition() {
+    if (typeof window === 'undefined') return;
+    
+    try {
       const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
       if (SpeechRecognition) {
         this.recognition = new SpeechRecognition();
         this.setupRecognition();
+        this.isInitialized = true;
+      } else {
+        console.error('Speech Recognition not supported in this browser');
       }
+    } catch (error) {
+      console.error('Failed to initialize speech recognition:', error);
     }
   }
 
@@ -34,9 +47,11 @@ class SpeechRecognitionService {
       if (this.onErrorCallback) {
         this.onErrorCallback(event.error);
       }
+      this.isListening = false;
     };
 
     this.recognition.onend = () => {
+      this.isListening = false;
       if (this.onEndCallback) {
         this.onEndCallback();
       }
@@ -49,20 +64,65 @@ class SpeechRecognitionService {
       result.getTracks().forEach(track => track.stop());
       return true;
     } catch (error) {
+      console.error('Microphone permission error:', error);
       return false;
     }
   }
 
-  public start() {
-    if (this.recognition) {
+  public async start() {
+    if (!this.isInitialized) {
+      this.initializeRecognition();
+    }
+
+    if (!this.recognition) {
+      if (this.onErrorCallback) {
+        this.onErrorCallback('Speech recognition not supported');
+      }
+      return;
+    }
+
+    if (this.isListening) {
+      return; // Already listening
+    }
+
+    try {
+      const hasPermission = await this.checkPermission();
+      if (!hasPermission) {
+        if (this.onErrorCallback) {
+          this.onErrorCallback('Microphone permission denied');
+        }
+        return;
+      }
+
       this.recognition.start();
+      this.isListening = true;
+    } catch (error) {
+      console.error('Error starting speech recognition:', error);
+      if (this.onErrorCallback) {
+        this.onErrorCallback('Failed to start speech recognition');
+      }
+      this.isListening = false;
     }
   }
 
   public stop() {
-    if (this.recognition) {
+    if (!this.recognition || !this.isListening) return;
+
+    try {
       this.recognition.stop();
+      this.isListening = false;
+    } catch (error) {
+      console.error('Error stopping speech recognition:', error);
     }
+  }
+
+  public cleanup() {
+    if (this.isListening) {
+      this.stop();
+    }
+    this.onTranscriptCallback = null;
+    this.onErrorCallback = null;
+    this.onEndCallback = null;
   }
 
   public onTranscript(callback: SpeechRecognitionCallback) {

@@ -1,39 +1,53 @@
-import { Mic, MicOff } from 'lucide-react';
+import { Mic } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface MicButtonProps {
   isListening: boolean;
   onClick: () => void;
-  variant?: 'floating' | 'inline';
+  variant?: 'default' | 'floating';
   className?: string;
 }
 
-export const MicButton = ({
-  isListening,
+export const MicButton = ({ 
+  isListening, 
   onClick,
-  variant = 'inline',
-  className = ''
+  variant = 'default',
+  className 
 }: MicButtonProps) => {
-  if (variant === 'floating') {
-    return (
-      <button
-        onClick={onClick}
-        className={`fixed bottom-6 right-6 p-4 rounded-full shadow-lg transition-all duration-200 z-10 
-          ${isListening 
-            ? 'bg-purple-600 hover:bg-purple-700 ring-4 ring-purple-500/50 animate-pulse' 
-            : 'bg-purple-500 hover:bg-purple-600 ring-2 ring-purple-400/30'
-          } backdrop-blur-sm ${className}`}
-      >
-        {isListening ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
-      </button>
-    );
-  }
+  const baseStyles = cn(
+    'transition-all duration-300',
+    {
+      'rounded-full p-2 hover:bg-white/10': variant === 'default',
+      'fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full shadow-xl': variant === 'floating'
+    },
+    className
+  );
 
+  const activeStyles = cn({
+    'bg-red-500/10 text-red-400 hover:bg-red-500/20': variant === 'default' && isListening,
+    'bg-red-500 text-white hover:bg-red-600': variant === 'floating' && isListening,
+    'bg-white/5 text-white/60 hover:text-white/90': !isListening,
+  });
+
+  const glowStyles = isListening ? 'animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]' : '';
+  const containerStyles = variant === 'floating' ? 'p-3 md:px-4' : '';
+  
   return (
-    <button
+    <button 
       onClick={onClick}
-      className={`text-white/60 hover:text-purple-400 transition-all p-2 hover:bg-purple-500/10 rounded-lg ${className}`}
+      className={cn(baseStyles, activeStyles, glowStyles, containerStyles)}
     >
-      <Mic className="w-4 h-4" />
+      <div className="flex items-center gap-2">
+        <Mic className={cn(
+          "h-4 w-4",
+          { "animate-pulse": isListening }
+        )} />
+        {variant === 'floating' && isListening && (
+          <span className="hidden md:inline text-sm font-medium">
+            Stop Recording
+          </span>
+        )}
+      </div>
     </button>
   );
 };
