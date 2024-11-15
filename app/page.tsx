@@ -1,8 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Calendar, User, Bot } from 'lucide-react';
-import { useStore } from '@/lib/store/useStore';
+import { Calendar, User, Bot, Mic } from 'lucide-react';
+import { useStore } from '@/app/lib/store';
 import { TaskCard } from './(features)/tasks/components/TaskCard';
 import { ProjectCard } from './(features)/tasks/components/ProjectCard';
 import { ChatDialog } from './(features)/voice/components/ChatDialog';
@@ -11,6 +11,8 @@ import { useSpeechRecognition } from './(features)/voice/hooks/useSpeechRecognit
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoadingState } from './components/LoadingState';
 import { ErrorToast } from './components/ErrorToast';
+import { formatDistanceToNow } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface Message {
   type: 'user' | 'agent';
@@ -28,6 +30,7 @@ export default function Home() {
   const isLoading = useStore(state => state.isLoading);
   const activeChatTask = useStore(state => state.activeChatTask);
   const setActiveChatTask = useStore(state => state.setActiveChatTask);
+  const addTask = useStore(state => state.addTask);
 
   const isChatOpen = activeChatTask !== null;
 
@@ -103,56 +106,91 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Transcript Section */}
-        <div className="border-b border-white/10 bg-black/20 backdrop-blur-sm">
-          <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
-            <div 
-              className="space-y-4 max-h-[240px] overflow-y-auto scrollbar-thin scrollbar-track-white/5 scrollbar-thumb-white/10 hover:scrollbar-thumb-white/20"
-              style={{
-                scrollBehavior: 'smooth'
-              }}
-              ref={(el) => {
-                if (el) {
-                  el.scrollTop = el.scrollHeight;
-                }
-              }}
-            >
-              {messages.length === 0 ? (
-                <p className="text-white/40 text-center py-4">
-                  Start speaking to see the conversation here
-                </p>
-              ) : (
-                messages.map((message, index) => (
-                  <div 
-                    key={index} 
-                    className={`flex items-start gap-3 ${
-                      message.type === 'user' ? 'text-purple-200' : 'text-emerald-200'
-                    }`}
+        {/* Voice Transcript Section */}
+        <div className="relative">
+          <div className="relative rounded-xl border border-white/10 bg-gradient-to-b from-white/5 to-transparent backdrop-blur-sm">
+            {/* Command Examples */}
+            {messages.length === 0 && !isListening && (
+              <div className="p-4">
+                <h3 className="mb-3 text-sm font-medium text-white/60">Try these commands:</h3>
+                <div className="space-y-2">
+                  {[
+                    'Create a new task called "Review project proposal"',
+                    'Show me all high priority tasks',
+                    'Mark task #3 as completed',
+                    'Assign task #2 to John',
+                    'What tasks are due today?'
+                  ].map((example, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-2 rounded-lg border border-white/5 bg-white/5 px-3 py-2 text-sm text-white/60"
+                    >
+                      <Mic className="h-3.5 w-3.5" />
+                      <span>{example}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Active Transcription */}
+            {isListening && !transcript && (
+              <div className="flex items-center gap-3 p-4">
+                <div className="flex items-end gap-1">
+                  {[...Array(4)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="h-2 w-0.5 animate-pulse rounded-full bg-emerald-400/60"
+                      style={{
+                        animationDelay: `${i * 0.15}s`
+                      }}
+                    />
+                  ))}
+                </div>
+                <p className="text-sm text-white/40">Waiting for voice command...</p>
+              </div>
+            )}
+
+            {/* Current Transcript */}
+            {isListening && transcript && (
+              <div className="flex items-start gap-3 p-4">
+                <div className="mt-1 rounded-full bg-emerald-500/20 p-1.5">
+                  <Mic className="h-3.5 w-3.5 text-emerald-300" />
+                </div>
+                <p className="text-sm text-white/90">{transcript}</p>
+              </div>
+            )}
+
+            {/* Conversation History */}
+            {messages.length > 0 && (
+              <div className="max-h-[300px] divide-y divide-white/5 overflow-y-auto scrollbar-thin scrollbar-track-white/5 scrollbar-thumb-white/10">
+                {messages.map((message, i) => (
+                  <div
+                    key={i}
+                    className="flex items-start gap-3 p-4"
                   >
-                    <div className={`p-2 rounded-lg ${
-                      message.type === 'user' ? 'bg-purple-500/10' : 'bg-emerald-500/10'
-                    }`}>
+                    <div className={cn(
+                      "mt-1 rounded-full p-1.5",
+                      message.type === 'user' 
+                        ? "bg-emerald-500/20" 
+                        : "bg-purple-500/20"
+                    )}>
                       {message.type === 'user' ? (
-                        <User className="w-4 h-4" />
+                        <Mic className="h-3.5 w-3.5 text-emerald-300" />
                       ) : (
-                        <Bot className="w-4 h-4" />
+                        <Bot className="h-3.5 w-3.5 text-purple-300" />
                       )}
                     </div>
                     <div className="flex-1">
-                      <div className="flex items-baseline gap-2">
-                        <span className="font-medium">
-                          {message.type === 'user' ? 'You' : 'Assistant'}
-                        </span>
-                        <span className="text-xs text-white/40">
-                          {message.timestamp.toLocaleTimeString()}
-                        </span>
-                      </div>
-                      <p className="mt-1">{message.text}</p>
+                      <p className="text-sm text-white/90">{message.text}</p>
+                      <p className="mt-1 text-xs text-white/40">
+                        {formatDistanceToNow(message.timestamp, { addSuffix: true })}
+                      </p>
                     </div>
                   </div>
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

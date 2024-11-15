@@ -33,12 +33,7 @@ export interface TaskSlice {
   isLoading: boolean;
   activeChatTask: number | null;
   activeProject: number | null;
-  filters: {
-    status?: TaskStatus[];
-    priority?: TaskPriority[];
-    assignee?: string[];
-    labels?: string[];
-  };
+  filters: Record<string, any>;
 
   // Actions
   setActiveChatTask: (taskId: number | null) => void;
@@ -48,7 +43,8 @@ export interface TaskSlice {
   assignTask: (taskId: number, memberId: string) => void;
   addTaskLabel: (taskId: number, label: string) => void;
   removeTaskLabel: (taskId: number, label: string) => void;
-  updateFilters: (filters: Partial<TaskSlice['filters']>) => void;
+  updateFilters: (filters: Record<string, any>) => void;
+  addTask: (task: Partial<Task>) => void;
 }
 
 export const createTaskSlice: StateCreator<TaskSlice> = (set, get) => ({
@@ -110,5 +106,28 @@ export const createTaskSlice: StateCreator<TaskSlice> = (set, get) => ({
   
   updateFilters: (filters) => set(state => ({
     filters: { ...state.filters, ...filters }
-  }))
+  })),
+
+  // Add new task
+  addTask: (task) => set(state => {
+    const newTask: Task = {
+      id: Math.max(...state.todos.map(t => t.id), 0) + 1,
+      title: task.title || '',
+      description: task.description || '',
+      status: task.status || 'todo',
+      type: task.type || 'task',
+      priority: task.priority || 'medium',
+      projectId: task.projectId || state.activeProject || 1,
+      createdAt: task.createdAt || new Date(),
+      updatedAt: task.updatedAt || new Date(),
+      labels: task.labels || [],
+      estimate: task.estimate,
+      timeSpent: task.timeSpent,
+      assigneeId: task.assigneeId
+    };
+
+    return {
+      todos: [...state.todos, newTask]
+    };
+  })
 });

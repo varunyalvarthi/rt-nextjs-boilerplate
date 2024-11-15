@@ -86,6 +86,31 @@ body {
   }
 }
 
+@keyframes wave1 {
+  0%, 100% { transform: scaleY(0.5); }
+  50% { transform: scaleY(1); }
+}
+
+@keyframes wave2 {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(0.3); }
+}
+
+@keyframes wave3 {
+  0%, 100% { transform: scaleY(0.6); }
+  50% { transform: scaleY(0.8); }
+}
+
+@keyframes wave4 {
+  0%, 100% { transform: scaleY(0.2); }
+  50% { transform: scaleY(0.5); }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-200%); }
+  100% { transform: translateX(200%); }
+}
+
 /* Custom Scrollbar */
 .scrollbar-thin {
   scrollbar-width: thin;

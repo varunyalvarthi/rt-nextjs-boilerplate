@@ -1,71 +1,49 @@
-export type TaskStatus = 'backlog' | 'todo' | 'in_progress' | 'in_review' | 'done';
+export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'done';
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
-export type TaskType = 'feature' | 'bug' | 'task' | 'story';
+export type TaskType = 'task' | 'bug' | 'feature' | 'improvement';
 
 export interface Task {
   id: number;
   title: string;
   description: string;
   status: TaskStatus;
-  priority: TaskPriority;
   type: TaskType;
+  priority: TaskPriority;
   projectId: number;
-  assigneeId?: string;
-  estimate?: number;
-  timeSpent?: number;
-  labels: string[];
   createdAt: Date;
   updatedAt: Date;
-  comments?: Comment[];
-  attachments?: Attachment[];
-  activity?: ActivityLog[];
+  labels: string[];
+  estimate?: number; // in hours
+  timeSpent?: number; // in hours
+  assigneeId?: number;
 }
 
 export interface Project {
   id: number;
   name: string;
   description: string;
-  key: string;
-  status: 'active' | 'archived' | 'completed';
-  members: ProjectMember[];
-  tasks: Task[];
+  color: string;
   createdAt: Date;
   updatedAt: Date;
+  members: number[]; // Member IDs
+  tasks: number[]; // Task IDs
 }
 
 export interface ProjectMember {
-  id: string;
+  id: number;
   name: string;
-  role: 'owner' | 'admin' | 'member' | 'viewer';
-  avatarUrl?: string;
   email: string;
+  avatar: string;
+  role: 'owner' | 'admin' | 'member';
+  joinedAt: Date;
 }
 
-export interface Comment {
+export interface TaskComment {
   id: number;
+  taskId: number;
+  authorId: number;
   content: string;
-  authorId: string;
   createdAt: Date;
   updatedAt: Date;
-  attachments?: Attachment[];
-}
-
-export interface Attachment {
-  id: number;
-  name: string;
-  url: string;
-  type: string;
-  size: number;
-  uploadedBy: string;
-  uploadedAt: Date;
-}
-
-export interface ActivityLog {
-  id: number;
-  type: 'status_change' | 'priority_change' | 'assignment' | 'comment' | 'attachment' | 'estimate_change';
-  userId: string;
-  timestamp: Date;
-  oldValue?: string;
-  newValue?: string;
-  description: string;
+  attachments?: string[]; // URLs to attached files
 }
