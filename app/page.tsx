@@ -185,6 +185,7 @@ export default function Home() {
                         projectName={projects.find(p => p.id === todo.projectId)?.name}
                         isListening={isListening}
                         onVoiceCommand={handleVoiceCommand}
+                        activeChatTaskId={activeChatTask}
                       />
                     </ErrorBoundary>
                   ))

@@ -8,7 +8,7 @@ import { useState } from 'react';
 interface ProjectCardProps {
   project: Project;
   isListening: boolean;
-  onVoiceCommand: (taskId?: number) => void;
+  onVoiceCommand: () => void;
 }
 
 export const ProjectCard = ({ 
@@ -18,11 +18,12 @@ export const ProjectCard = ({
 }: ProjectCardProps) => {
   const { todos, deleteProject } = useStore();
   const [isExpanded, setIsExpanded] = useState(true);
+  const [showDeletePopup, setShowDeletePopup] = useState(false);
   const projectTodos = todos.filter(todo => todo.projectId === project.id);
   const completedTodos = projectTodos.filter(todo => todo.status === 'completed').length;
 
   return (
-    <div className="group/project overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-white/5 to-white/[0.02]">
+    <div className="group/project relative overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-white/5 to-white/[0.02]">
       <div className="relative">
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.05] to-transparent -translate-x-[200%] group-hover/project:animate-[shimmer_2s_ease-in-out]" />
         
@@ -61,21 +62,43 @@ export const ProjectCard = ({
                   isListening={isListening}
                   onClick={() => onVoiceCommand()}
                 />
-                <div className="relative group">
-                  <button className="rounded-full bg-white/5 p-2 text-white/60 hover:text-white/90 transition-colors">
+                <div className="relative">
+                  <button 
+                    className="rounded-full bg-white/5 p-2 text-white/60 hover:text-white/90 transition-colors"
+                    onClick={() => setShowDeletePopup(!showDeletePopup)}
+                  >
                     <MoreVertical className="h-4 w-4" />
                   </button>
-                  <div className="absolute right-0 top-full mt-1 hidden group-hover:block z-10">
-                    <div className="w-48 rounded-lg border border-white/10 bg-zinc-900 py-1 shadow-xl">
-                      <button
-                        onClick={() => deleteProject(project.id)}
-                        className="flex w-full items-center gap-2 px-4 py-2 text-sm text-white/60 hover:bg-white/5 hover:text-red-400"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Delete Project
-                      </button>
+                  {showDeletePopup && (
+                    <div 
+                      className="fixed z-50"
+                      style={{
+                        top: 'var(--popup-top)',
+                        left: 'var(--popup-left)'
+                      }}
+                      ref={(el) => {
+                        if (el) {
+                          const button = el.previousElementSibling as HTMLElement;
+                          const rect = button.getBoundingClientRect();
+                          el.style.setProperty('--popup-top', `${rect.bottom + 8}px`);
+                          el.style.setProperty('--popup-left', `${rect.left - el.offsetWidth + button.offsetWidth}px`);
+                        }
+                      }}
+                    >
+                      <div className="w-48 rounded-lg border border-white/10 bg-zinc-900/95 py-1 shadow-xl backdrop-blur-sm">
+                        <button
+                          onClick={() => {
+                            deleteProject(project.id);
+                            setShowDeletePopup(false);
+                          }}
+                          className="flex w-full items-center gap-2 px-4 py-2 text-sm text-white/60 hover:bg-white/5 hover:text-red-400"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Delete Project
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>

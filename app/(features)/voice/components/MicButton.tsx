@@ -18,7 +18,7 @@ export const MicButton = ({
     'transition-all duration-300',
     {
       'rounded-full p-2 hover:bg-white/10': variant === 'default',
-      'fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full shadow-2xl': variant === 'floating'
+      'fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-full py-3 px-4 shadow-2xl backdrop-blur-sm': variant === 'floating'
     },
     className
   );
@@ -29,18 +29,38 @@ export const MicButton = ({
         onClick={onClick}
         className={cn(
           baseStyles,
-          'p-4 md:px-6 backdrop-blur-sm',
+          'group border border-white/10',
           isListening
-            ? 'bg-red-900 text-white hover:bg-red-800 shadow-[0_0_30px_rgba(239,68,68,0.3)]'
-            : 'bg-indigo-500 text-white hover:bg-indigo-400 shadow-[0_0_20px_rgba(99,102,241,0.3)]'
+            ? 'bg-black/80 text-white hover:bg-black/70'
+            : 'bg-black/60 text-emerald-400/90 hover:bg-black/50'
         )}
+        title={isListening ? 'Stop Recording' : 'Start Recording'}
       >
-        <div className="flex items-center gap-3">
-          <Mic className="h-5 w-5" />
+        <div className="relative flex items-center gap-3">
+          <div className={cn(
+            "relative flex h-6 w-6 items-center justify-center",
+            isListening && "after:absolute after:inset-0 after:animate-ping after:rounded-full after:bg-red-500/50 after:duration-1000"
+          )}>
+            <Mic className={cn(
+              "h-5 w-5 transition-colors duration-300",
+              isListening ? "text-red-500" : "text-emerald-400 group-hover:text-emerald-300"
+            )} />
+          </div>
+
+          {/* Sound Wave Animation */}
           {isListening && (
-            <span className="hidden md:inline text-sm font-medium whitespace-nowrap">
-              Stop Recording
-            </span>
+            <div className="flex items-center gap-0.5 pr-1">
+              {[...Array(4)].map((_, i) => (
+                <div
+                  key={i}
+                  className="h-4 w-0.5 rounded-full bg-red-500"
+                  style={{
+                    animation: `soundWave 1s ease-in-out infinite`,
+                    animationDelay: `${i * 0.15}s`
+                  }}
+                />
+              ))}
+            </div>
           )}
         </div>
       </button>
@@ -48,20 +68,17 @@ export const MicButton = ({
   }
 
   // Default inline variant
-  const inlineActiveStyles = cn({
-    'bg-red-500/10 text-red-400 hover:bg-red-500/20': isListening,
-    'bg-white/5 text-white/60 hover:text-white/90': !isListening,
-  });
-  
   return (
-    <button 
+    <button
       onClick={onClick}
-      className={cn(baseStyles, inlineActiveStyles)}
+      className={cn(
+        baseStyles,
+        isListening 
+          ? 'text-red-400' 
+          : 'text-white/60'
+      )}
     >
-      <Mic className={cn(
-        "h-4 w-4",
-        { "animate-pulse": isListening }
-      )} />
+      <Mic className="h-4 w-4" />
     </button>
   );
 };

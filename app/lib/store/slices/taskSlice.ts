@@ -1,11 +1,16 @@
 import { StateCreator } from 'zustand';
+import { Project, Task, TaskStatus, TaskPriority, ProjectMember } from '@/app/types/task';
+import { mockData } from '@/app/data/mock/tasks';
 
 export interface Task {
   id: number;
   title: string;
   description: string;
-  status: 'pending' | 'in_progress' | 'completed';
+  status: TaskStatus;
+  priority: TaskPriority;
   projectId: number;
+  assigneeId?: string;
+  labels?: string[];
 }
 
 export interface Project {
@@ -15,45 +20,95 @@ export interface Project {
   tasks: Task[];
 }
 
-export interface TaskSlice {
-  todos: Task[];
-  projects: Project[];
-  isLoading: boolean;
-  activeChatTask: number | null;
-  setActiveChatTask: (taskId: number | null) => void;
+export interface ProjectMember {
+  id: string;
+  name: string;
 }
 
-// Mock data
-const mockTasks: Task[] = [
-  {
-    id: 1,
-    title: 'Implement voice commands',
-    description: 'Add voice command functionality to the app',
-    status: 'in_progress',
-    projectId: 1
-  },
-  {
-    id: 2,
-    title: 'Design UI components',
-    description: 'Create reusable UI components',
-    status: 'completed',
-    projectId: 1
-  }
-];
+export interface TaskSlice {
+  // State
+  todos: Task[];
+  projects: Project[];
+  members: ProjectMember[];
+  isLoading: boolean;
+  activeChatTask: number | null;
+  activeProject: number | null;
+  filters: {
+    status?: TaskStatus[];
+    priority?: TaskPriority[];
+    assignee?: string[];
+    labels?: string[];
+  };
 
-const mockProjects: Project[] = [
-  {
-    id: 1,
-    name: 'DeepKaam App',
-    description: 'Voice-powered task management application',
-    tasks: mockTasks
-  }
-];
+  // Actions
+  setActiveChatTask: (taskId: number | null) => void;
+  setActiveProject: (projectId: number | null) => void;
+  updateTaskStatus: (taskId: number, status: TaskStatus) => void;
+  updateTaskPriority: (taskId: number, priority: TaskPriority) => void;
+  assignTask: (taskId: number, memberId: string) => void;
+  addTaskLabel: (taskId: number, label: string) => void;
+  removeTaskLabel: (taskId: number, label: string) => void;
+  updateFilters: (filters: Partial<TaskSlice['filters']>) => void;
+}
 
-export const createTaskSlice: StateCreator<TaskSlice> = (set) => ({
-  todos: mockTasks,
-  projects: mockProjects,
+export const createTaskSlice: StateCreator<TaskSlice> = (set, get) => ({
+  // Initial state with null checks
+  todos: mockData?.tasks || [],
+  projects: mockData?.projects || [],
+  members: mockData?.members || [],
   isLoading: false,
   activeChatTask: null,
-  setActiveChatTask: (taskId) => set({ activeChatTask: taskId })
+  activeProject: mockData?.projects?.[0]?.id || null,
+  filters: {},
+
+  // Actions
+  setActiveChatTask: (taskId) => set({ activeChatTask: taskId }),
+  
+  setActiveProject: (projectId) => set({ activeProject: projectId }),
+  
+  updateTaskStatus: (taskId, status) => set(state => ({
+    todos: state.todos.map(todo =>
+      todo.id === taskId ? { ...todo, status, updatedAt: new Date() } : todo
+    )
+  })),
+  
+  updateTaskPriority: (taskId, priority) => set(state => ({
+    todos: state.todos.map(todo =>
+      todo.id === taskId ? { ...todo, priority, updatedAt: new Date() } : todo
+    )
+  })),
+  
+  assignTask: (taskId, memberId) => set(state => ({
+    todos: state.todos.map(todo =>
+      todo.id === taskId ? { ...todo, assigneeId: memberId, updatedAt: new Date() } : todo
+    )
+  })),
+  
+  addTaskLabel: (taskId, label) => set(state => ({
+    todos: state.todos.map(todo =>
+      todo.id === taskId
+        ? { 
+            ...todo, 
+            labels: [...new Set([...(todo.labels || []), label])],
+            updatedAt: new Date() 
+          }
+        : todo
+    )
+  })),
+  
+  removeTaskLabel: (taskId, label) => set(state => ({
+    todos: state.todos.map(todo =>
+      todo.id === taskId
+        ? { 
+            ...todo, 
+            labels: (todo.labels || []).filter(l => l !== label),
+            updatedAt: new Date() 
+          }
+        : todo
+    )
+  })),
+  
+  updateFilters: (filters) => set(state => ({
+    filters: { ...state.filters, ...filters }
+  }))
 });

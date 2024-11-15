@@ -71,6 +71,21 @@ body {
   }
 }
 
+@keyframes soundWave {
+  0% {
+    height: 0.5rem;
+    opacity: 0.35;
+  }
+  50% {
+    height: 1rem;
+    opacity: 1;
+  }
+  100% {
+    height: 0.5rem;
+    opacity: 0.35;
+  }
+}
+
 /* Custom Scrollbar */
 .scrollbar-thin {
   scrollbar-width: thin;
