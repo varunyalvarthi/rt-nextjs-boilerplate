@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Mic, MicOff, Trash2 } from 'lucide-react';
+import { Mic, MicOff, Trash2, AlertCircle } from 'lucide-react';
 
 interface Todo {
   id: number;
@@ -13,6 +13,7 @@ export default function Home() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [isListening, setIsListening] = useState(false);
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -27,11 +28,24 @@ export default function Home() {
           const text = event.results[0][0].transcript;
           addTodo(text);
           setIsListening(false);
+          setError(null);
         };
 
         recognition.onerror = (event) => {
-          console.error('Speech recognition error:', event.error);
           setIsListening(false);
+          switch (event.error) {
+            case 'audio-capture':
+              setError('No microphone was found. Ensure that a microphone is installed and that microphone settings are configured correctly.');
+              break;
+            case 'not-allowed':
+              setError('Permission to use microphone was denied. Please allow microphone access and try again.');
+              break;
+            case 'network':
+              setError('Network error occurred. Please check your internet connection.');
+              break;
+            default:
+              setError(`Error occurred: ${event.error}`);
+          }
         };
 
         recognition.onend = () => {
@@ -39,18 +53,53 @@ export default function Home() {
         };
 
         setRecognition(recognition);
+      } else {
+        setError('Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.');
       }
     }
   }, []);
 
-  const toggleListening = () => {
+  const checkMicrophonePermission = async () => {
+    try {
+      const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+      
+      if (permissionStatus.state === 'granted') {
+        return true;
+      } else if (permissionStatus.state === 'prompt') {
+        // We need to request permission
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach(track => track.stop());
+        return true;
+      } else {
+        // Permission denied
+        setError('Microphone access is blocked. Please allow microphone access in your browser settings and refresh the page.');
+        return false;
+      }
+    } catch (err) {
+      console.error('Error checking microphone permission:', err);
+      return false;
+    }
+  };
+
+  const toggleListening = async () => {
     if (!recognition) return;
 
     if (isListening) {
       recognition.stop();
-    } else {
-      recognition.start();
-      setIsListening(true);
+      setIsListening(false);
+      return;
+    }
+
+    const hasPermission = await checkMicrophonePermission();
+    if (hasPermission) {
+      try {
+        setError(null);
+        recognition.start();
+        setIsListening(true);
+      } catch (err) {
+        setError('Error starting speech recognition. Please try again.');
+        setIsListening(false);
+      }
     }
   };
 
@@ -81,6 +130,13 @@ export default function Home() {
         </h1>
         
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+          {error && (
+            <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+              <p>{error}</p>
+            </div>
+          )}
+          
           <button
             onClick={toggleListening}
             className={`w-full flex items-center justify-center gap-2 p-4 rounded-lg text-white transition-colors ${
