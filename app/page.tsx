@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Mic, MicOff, Trash2, AlertCircle } from 'lucide-react';
+import { Mic, MicOff, Trash2, AlertCircle, Calendar } from 'lucide-react';
 
 interface Todo {
   id: number;
   text: string;
   completed: boolean;
+  timestamp: string;
 }
 
 interface ChatMessage {
@@ -15,12 +16,184 @@ interface ChatMessage {
   timestamp: string;
 }
 
+interface Project {
+  id: number;
+  name: string;
+  tasks: Todo[];
+  color: string;
+}
+
+// Dummy data for todos
+const dummyTodos: Todo[] = [
+  {
+    id: 1,
+    text: "Complete the project documentation",
+    completed: false,
+    timestamp: new Date().toISOString(),
+  },
+  {
+    id: 2,
+    text: "Review pull requests",
+    completed: true,
+    timestamp: new Date().toISOString(),
+  },
+  {
+    id: 3,
+    text: "Schedule team meeting for next sprint",
+    completed: false,
+    timestamp: new Date().toISOString(),
+  },
+  {
+    id: 4,
+    text: "Update dependencies in the project",
+    completed: false,
+    timestamp: new Date(Date.now() - 86400000).toISOString(), // Yesterday
+  },
+  {
+    id: 5,
+    text: "Fix bug in authentication module",
+    completed: true,
+    timestamp: new Date(Date.now() - 86400000).toISOString(),
+  },
+  {
+    id: 6,
+    text: "Write unit tests for new features",
+    completed: false,
+    timestamp: new Date().toISOString(),
+  },
+  {
+    id: 7,
+    text: "Prepare presentation for stakeholders",
+    completed: false,
+    timestamp: new Date().toISOString(),
+  },
+  {
+    id: 8,
+    text: "Deploy updates to production",
+    completed: true,
+    timestamp: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
+  }
+];
+
+// Dummy data for chat messages
+const dummyMessages: ChatMessage[] = [
+  {
+    id: 1,
+    text: "Add a new task to review the project documentation",
+    timestamp: "9:00 AM"
+  },
+  {
+    id: 2,
+    text: "Mark the dependency update task as completed",
+    timestamp: "9:15 AM"
+  },
+  {
+    id: 3,
+    text: "Schedule a team meeting for tomorrow",
+    timestamp: "9:30 AM"
+  },
+  {
+    id: 4,
+    text: "Add a reminder to deploy the new features",
+    timestamp: "10:00 AM"
+  },
+  {
+    id: 5,
+    text: "Create a task for unit testing",
+    timestamp: "10:30 AM"
+  },
+  {
+    id: 6,
+    text: "Update the sprint board with new tasks",
+    timestamp: "11:00 AM"
+  },
+  {
+    id: 7,
+    text: "Set up the presentation for next week",
+    timestamp: "11:30 AM"
+  },
+  {
+    id: 8,
+    text: "Review and prioritize backlog items",
+    timestamp: "12:00 PM"
+  }
+];
+
+// Dummy data for projects
+const dummyProjects: Project[] = [
+  {
+    id: 1,
+    name: "Website Redesign",
+    color: "bg-white/5",
+    tasks: [
+      {
+        id: 101,
+        text: "Create new homepage mockup",
+        completed: false,
+        timestamp: new Date().toISOString(),
+      },
+      {
+        id: 102,
+        text: "Implement responsive navigation",
+        completed: true,
+        timestamp: new Date().toISOString(),
+      }
+    ]
+  },
+  {
+    id: 2,
+    name: "Mobile App Development",
+    color: "bg-white/5",
+    tasks: [
+      {
+        id: 201,
+        text: "Design user authentication flow",
+        completed: false,
+        timestamp: new Date().toISOString(),
+      },
+      {
+        id: 202,
+        text: "Set up Firebase integration",
+        completed: true,
+        timestamp: new Date().toISOString(),
+      }
+    ]
+  },
+  {
+    id: 3,
+    name: "Marketing Campaign",
+    color: "bg-white/5",
+    tasks: [
+      {
+        id: 301,
+        text: "Create social media content calendar",
+        completed: false,
+        timestamp: new Date().toISOString(),
+      },
+      {
+        id: 302,
+        text: "Design email newsletter template",
+        completed: false,
+        timestamp: new Date().toISOString(),
+      }
+    ]
+  }
+];
+
 export default function Home() {
-  const [todos, setTodos] = useState<Todo[]>([]);
+  const [todos, setTodos] = useState<Todo[]>(dummyTodos);
   const [isListening, setIsListening] = useState(false);
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(dummyMessages);
+  const [projects, setProjects] = useState<Project[]>(dummyProjects);
+
+  // Get today's todos
+  const todaysTodos = todos.filter(todo => {
+    const todoDate = new Date(todo.timestamp).toDateString();
+    const today = new Date().toDateString();
+    return todoDate === today;
+  });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -115,7 +288,7 @@ export default function Home() {
       {
         id: Date.now(),
         text,
-        timestamp: new Date().toLocaleTimeString(),
+        timestamp: new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
       },
     ]);
   };
@@ -123,7 +296,12 @@ export default function Home() {
   const addTodo = (text: string) => {
     setTodos((prevTodos) => [
       ...prevTodos,
-      { id: Date.now(), text, completed: false },
+      { 
+        id: Date.now(), 
+        text, 
+        completed: false,
+        timestamp: new Date().toISOString(),
+      },
     ]);
   };
 
@@ -140,96 +318,144 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
-      <div className="max-w-2xl mx-auto">
-        <h1 className="text-4xl font-bold text-center mb-8 text-gray-800 dark:text-white">
-          Deep<span className="text-blue-500">काम</span>
-        </h1>
-        
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+    <div className="h-screen flex bg-black text-white">
+      {/* Left Column - Chat Section */}
+      <div className="w-1/2 flex flex-col border-r border-white/20">
+        <div className="flex-grow overflow-y-auto p-6">
           {error && (
-            <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 flex items-start gap-2">
+            <div className="mb-4 p-4 bg-white/5 flex items-start gap-2">
               <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
               <p>{error}</p>
             </div>
           )}
 
-          <div className="mb-6 h-48 overflow-y-auto bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+          <div className="space-y-4">
             {chatMessages.length === 0 ? (
-              <p className="text-center text-gray-500 dark:text-gray-400">
+              <p className="text-center text-white/60">
                 Your conversation will appear here...
               </p>
             ) : (
-              <div className="space-y-2">
-                {chatMessages.map((message) => (
-                  <div key={message.id} className="flex items-start gap-2">
-                    <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                      {message.timestamp}:
-                    </span>
-                    <p className="text-gray-800 dark:text-gray-200">{message.text}</p>
-                  </div>
-                ))}
-              </div>
+              chatMessages.map((message) => (
+                <div key={message.id} className="flex items-start gap-3 group">
+                  <span className="text-sm text-white/60 whitespace-nowrap">
+                    {message.timestamp}
+                  </span>
+                  <p className="text-white/90">{message.text}</p>
+                </div>
+              ))
             )}
           </div>
-          
+        </div>
+
+        <div className="p-6 border-t border-white/20">
           <button
             onClick={toggleListening}
-            className={`w-full flex items-center justify-center gap-2 p-4 rounded-lg text-white transition-colors ${
+            className={`w-full flex items-center justify-center gap-2 p-4 transition-colors ${
               isListening
-                ? 'bg-red-500 hover:bg-red-600'
-                : 'bg-blue-500 hover:bg-blue-600'
+                ? 'bg-white text-black'
+                : 'bg-white/5 hover:bg-white/10'
             }`}
           >
             {isListening ? (
               <>
-                <MicOff className="w-6 h-6" /> Stop Listening
+                <MicOff className="w-5 h-5" /> DeepKaam
               </>
             ) : (
               <>
-                <Mic className="w-6 h-6" /> Start Listening
+                <Mic className="w-5 h-5" /> DeepKaam
               </>
             )}
           </button>
           {isListening && (
-            <p className="text-center mt-4 text-gray-600 dark:text-gray-300">
+            <p className="text-center mt-4 text-white/60">
               Listening... Speak now
             </p>
           )}
         </div>
+      </div>
 
-        <div className="space-y-4">
-          {todos.map((todo) => (
-            <div
-              key={todo.id}
-              className="flex items-center gap-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow"
-            >
-              <input
-                type="checkbox"
-                checked={todo.completed}
-                onChange={() => toggleTodo(todo.id)}
-                className="w-5 h-5 accent-blue-500"
-              />
-              <span
-                className={`flex-1 text-gray-800 dark:text-gray-200 ${
-                  todo.completed ? 'line-through text-gray-400' : ''
-                }`}
-              >
-                {todo.text}
-              </span>
-              <button
-                onClick={() => deleteTodo(todo.id)}
-                className="text-red-500 hover:text-red-600"
-              >
-                <Trash2 className="w-5 h-5" />
-              </button>
+      {/* Right Column - Tasks Section */}
+      <div className="w-1/2 overflow-y-auto">
+        <div className="p-6 space-y-8">
+          {/* Today's Tasks Section */}
+          <section>
+            <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
+              <Calendar className="w-5 h-5" />
+              Today's Tasks
+            </h2>
+            <div className="space-y-2">
+              {todaysTodos.length === 0 ? (
+                <p className="text-white/60">
+                  No tasks for today yet.
+                </p>
+              ) : (
+                todaysTodos.map((todo) => (
+                  <div
+                    key={todo.id}
+                    className="flex items-center gap-4 p-3 bg-white/5 group hover:bg-white/10"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={todo.completed}
+                      onChange={() => toggleTodo(todo.id)}
+                      className="w-4 h-4 border border-white/20 bg-transparent checked:bg-white checked:border-white focus:ring-0"
+                    />
+                    <span
+                      className={`flex-1 ${
+                        todo.completed ? 'line-through text-white/40' : 'text-white/90'
+                      }`}
+                    >
+                      {todo.text}
+                    </span>
+                    <button
+                      onClick={() => deleteTodo(todo.id)}
+                      className="opacity-0 group-hover:opacity-100 text-white/60 hover:text-white/90"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
-          ))}
-          {todos.length === 0 && (
-            <p className="text-center text-gray-500 dark:text-gray-400">
-              No todos yet. Click the button above and speak to add one!
-            </p>
-          )}
+          </section>
+
+          {/* Current Projects Section */}
+          <section>
+            <h2 className="text-lg font-medium mb-4">
+              Current Projects
+            </h2>
+            <div className="space-y-4">
+              {projects.map((project) => (
+                <div key={project.id} className="space-y-2">
+                  <h3 className="text-white/90 font-medium">
+                    {project.name}
+                  </h3>
+                  <div className="space-y-1">
+                    {project.tasks.map((task) => (
+                      <div
+                        key={task.id}
+                        className="flex items-center gap-3 p-2 bg-white/5 group hover:bg-white/10"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={task.completed}
+                          onChange={() => toggleTodo(task.id)}
+                          className="w-4 h-4 border border-white/20 bg-transparent checked:bg-white checked:border-white focus:ring-0"
+                        />
+                        <span
+                          className={`flex-1 text-sm ${
+                            task.completed ? 'line-through text-white/40' : 'text-white/90'
+                          }`}
+                        >
+                          {task.text}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
         </div>
       </div>
     </div>
