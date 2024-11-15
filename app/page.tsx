@@ -9,11 +9,18 @@ interface Todo {
   completed: boolean;
 }
 
+interface ChatMessage {
+  id: number;
+  text: string;
+  timestamp: string;
+}
+
 export default function Home() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [isListening, setIsListening] = useState(false);
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -27,6 +34,7 @@ export default function Home() {
         recognition.onresult = (event) => {
           const text = event.results[0][0].transcript;
           addTodo(text);
+          addChatMessage(text);
           setIsListening(false);
           setError(null);
         };
@@ -66,12 +74,10 @@ export default function Home() {
       if (permissionStatus.state === 'granted') {
         return true;
       } else if (permissionStatus.state === 'prompt') {
-        // We need to request permission
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         stream.getTracks().forEach(track => track.stop());
         return true;
       } else {
-        // Permission denied
         setError('Microphone access is blocked. Please allow microphone access in your browser settings and refresh the page.');
         return false;
       }
@@ -103,6 +109,17 @@ export default function Home() {
     }
   };
 
+  const addChatMessage = (text: string) => {
+    setChatMessages((prevMessages) => [
+      ...prevMessages,
+      {
+        id: Date.now(),
+        text,
+        timestamp: new Date().toLocaleTimeString(),
+      },
+    ]);
+  };
+
   const addTodo = (text: string) => {
     setTodos((prevTodos) => [
       ...prevTodos,
@@ -126,7 +143,7 @@ export default function Home() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
       <div className="max-w-2xl mx-auto">
         <h1 className="text-4xl font-bold text-center mb-8 text-gray-800 dark:text-white">
-          Voice Todo List
+          Deep<span className="text-blue-500">काम</span>
         </h1>
         
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
@@ -136,6 +153,25 @@ export default function Home() {
               <p>{error}</p>
             </div>
           )}
+
+          <div className="mb-6 h-48 overflow-y-auto bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+            {chatMessages.length === 0 ? (
+              <p className="text-center text-gray-500 dark:text-gray-400">
+                Your conversation will appear here...
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {chatMessages.map((message) => (
+                  <div key={message.id} className="flex items-start gap-2">
+                    <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                      {message.timestamp}:
+                    </span>
+                    <p className="text-gray-800 dark:text-gray-200">{message.text}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
           
           <button
             onClick={toggleListening}
